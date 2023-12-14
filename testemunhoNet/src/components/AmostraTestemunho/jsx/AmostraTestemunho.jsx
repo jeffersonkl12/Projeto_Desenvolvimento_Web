@@ -1,22 +1,25 @@
 import '../css/AmostraTestemunho.css'
 
-export default function AmostraTestemunho(){
+export default function AmostraTestemunho({ testemunho, clickLink }) {
+    const conteudo = testemunho.conteudo.length > 287 ? testemunho.conteudo.substring(0, 287) + "..." : testemunho.conteudo;
+
     return (
         <>
             <div id="divAmostraTestemunho">
                 <article>
                     <header>
-                        <h1 id="tituloAmostraTestemunho">Titulo</h1>
-                        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Autem earum repellat ex tempore asperiores placeat perferendis dolores ipsa, laborum distinctio dolorem, voluptatibus natus. Modi, suscipit eius architecto itaque fuga nisi! Lorem ipsum dolor sit amet consectetur, adipisicing elit...</p>
+                        <h1 id="tituloAmostraTestemunho">{testemunho.titulo}</h1>
+                        <p>{conteudo}</p>
                     </header>
                     <footer>
                         <address>
-                            <em><a href="#" className="link-perfil-usuario">Autor</a></em> - <time >2022/06/15 13:00</time>
+                            <em><a href="#" className="link-perfil-usuario">{testemunho.autor.nome}</a></em> - <time >2022/06/15 13:00</time>
                         </address>
-                        <a href="#" id="linkTestemunhoCompleto">Leia o testemunho completo</a>
+                        <a href="#" id="linkTestemunhoCompleto" onClick={() => clickLink(testemunho)}>Leia o testemunho completo</a>
                     </footer>
                 </article>
             </div>
         </>
     )
 }
+

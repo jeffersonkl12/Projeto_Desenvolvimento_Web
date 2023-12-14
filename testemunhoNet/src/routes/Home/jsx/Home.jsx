@@ -3,8 +3,33 @@ import Carrosselimagens from '../../../components/Carrosselimagens/jsx/Carrossel
 import BarraPesquisa from '../../../components/BarraPesquisa/jsx/BarraPesquisa';
 import AmostraTestemunho from '../../../components/AmostraTestemunho/jsx/AmostraTestemunho';
 import LinksPaginacao from '../../../components/LinksPaginacao/jsx/LinksPaginacao';
+import { useEffect, useState } from 'react';
+import { useNavigate } from "react-router-dom";
+
 
 export default function Home() {
+    const [testemunhos,setTestemunhos] = useState([]);
+    const [pagination,setPagination] = useState(0);
+    const [totalPost,setTotalPost] = useState(0);
+    const navigate = useNavigate();
+
+    useEffect(()=>{
+        (async ()=>{
+
+            const testemunhosData = await (await fetch(`http://localhost:8080/testemunho/filtro?page=${pagination}&size=3`)).json();
+            const totalPostAux = await (await fetch("http://localhost:8080/testemunho/quantidade")).json();
+
+            setTotalPost(totalPostAux.qtd);
+            setTestemunhos(testemunhosData);
+        })();
+
+    },[pagination]);
+
+    const clickTestemunho = async (testemunho) => {
+        const testemunhoCompleto = await (await fetch(`http://localhost:8080/testemunho/${testemunho.id}`)).json();
+        navigate("/testemunho",{state: testemunhoCompleto});
+    }
+
     return (
         <>
             <div className="container" id="conteudo">
@@ -20,11 +45,15 @@ export default function Home() {
                 </section>
                 <section>
                     <h3 id="tituloTestemunhos">Testemunhos</h3>
+                    {/* <AmostraTestemunho />
                     <AmostraTestemunho />
-                    <AmostraTestemunho />
-                    <AmostraTestemunho />
+                    <AmostraTestemunho /> */
+                    testemunhos ? testemunhos.map((t,i) => {
+                        return <AmostraTestemunho testemunho={t} key={i} clickLink={clickTestemunho}/>
+                    }): null
                     
-                    <LinksPaginacao />
+                    }
+                    <LinksPaginacao totalPag={totalPost} postToPag={3} paginacao={setPagination}/>
                 </section>
             </div>
         </>
