@@ -1,22 +1,21 @@
 import Form from "../../../components/utils/Form";
+import RollBack from "../../../components/utils/RollBack";
+import useUsuario from "../../../hooks/useUsuario";
 import "../css/editarPerfil.css";
 
-const perfil = {
-    nome: "marcos",
-    sobrenome: "sousa",
-    email: "marcos@gmail.com",
-    senha: "1234",
-    estado: "Ceará"
-}
+const EditarPerfil = () => {
 
+    const { usuario } = useUsuario();
 
-const EditarPerfil = () =>{
     return (
-        <div className="d-flex flex-row justify-content-center align-items-center">
-            <div className="editar-perfil__container">
-                <Form perfil={perfil}/>
+        <>
+            <RollBack />
+            <div className="d-flex flex-row justify-content-center align-items-center">
+                <div className="editar-perfil__container">
+                    <Form perfil={usuario} />
+                </div>
             </div>
-        </div>
+        </>
     );
 }
 

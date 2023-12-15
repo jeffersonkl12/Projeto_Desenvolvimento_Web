@@ -1,0 +1,10 @@
+.rollback-container{
+    position: absolute;
+
+    left: 50px;
+    top: 20px;
+}
+
+.rollback-container:hover{
+    cursor: pointer;
+}

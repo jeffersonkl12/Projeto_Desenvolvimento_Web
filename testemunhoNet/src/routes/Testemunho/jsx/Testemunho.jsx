@@ -4,25 +4,24 @@ import { IoArrowRedoOutline } from "react-icons/io5";
 import { AiOutlineDownload } from "react-icons/ai";
 import { CiMenuKebab } from "react-icons/ci";
 import { FiEdit } from "react-icons/fi";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Input from "../../../components/utils/Input";
 import { useEffect, useState } from "react";
+import useUsuario from "../../../hooks/useUsuario";
+import axio from "axios";
+import useToken from "../../../hooks/useToken";
 
 
-const Comentario = ({ comentario }) => {
-    const [usuarioAtual, setUsuarioAtual] = useState();
+const Comentario = ({ comentario, onClickDelete }) => {
+    const { usuario } = useUsuario();
 
-    useEffect(() => {
-        localStorage.setItem("usuario", JSON.stringify({
-            "id": 2,
-            "nome": "sousa",
-            "email": "jeffersonkl15@gmail.com",
-            "senha": "1234"
-        }));
+    const data = new Date(comentario.dataCriacao);
 
-        const usuario = localStorage.getItem("usuario");
-        setUsuarioAtual(JSON.parse(usuario));
-    }, []);
+    const dia = data.getDate();
+    const mes = data.getMonth() + 1;
+    const ano = data.getFullYear();
+
+    const dataFormatada = `${dia < 10 ? '0' : ''}${dia}/${mes < 10 ? '0' : ''}${mes}/${ano}`;
 
     return (
         <div className="comentario__container d-flex flex-row">
@@ -38,19 +37,19 @@ const Comentario = ({ comentario }) => {
                         </div>
                         <ul className="dropdown-menu dropdown-comentario">
                             {
-                                usuarioAtual && usuarioAtual.id === comentario.usuarioId ? (<>
-                                    <li><a className="dropdown-item" href="#">Editar</a></li>
-                                    <li><a className="dropdown-item" href="#">Excluir</a></li>
+                                usuario && usuario.id === comentario.usuarioId ? (<>
+                                    <li><a className="dropdown-item" >Editar</a></li>
+                                    <li><a className="dropdown-item" onClick={onClickDelete}>Excluir</a></li>
                                 </>) : null
                             }
-                            <li><a className="dropdown-item" href="#">Denunciar</a></li>
+                            <li><a className="dropdown-item">Denunciar</a></li>
                         </ul>
                     </div>
 
                 </div>
                 <div className="comentario__desc">
                     <p>{comentario ? comentario.conteudo : null}</p>
-                    <p className="comentario__data">04/01/2023</p>
+                    <p className="comentario__data">{dataFormatada}</p>
                 </div>
             </div>
         </div>
@@ -58,13 +57,14 @@ const Comentario = ({ comentario }) => {
 }
 
 
-const ComentarioTestemunho = ({ usuario, testemunhoId, comentariosArray }) => {
+const ComentarioTestemunho = ({ testemunhoId, comentariosArray }) => {
     const [comentario, setComentario] = useState("");
-    const [comentarios, setComentarios] = useState(comentariosArray)
+    const [comentarios, setComentarios] = useState(comentariosArray);
+    const { token } = useToken();
+    const { usuario } = useUsuario();
 
     useEffect(() => {
         if (comentariosArray) {
-            console.log(comentariosArray);
             setComentarios(comentariosArray);
         }
     }, []);
@@ -76,29 +76,63 @@ const ComentarioTestemunho = ({ usuario, testemunhoId, comentariosArray }) => {
     const saveComentario = async () => {
         const auxComentario = comentarios.slice();
 
-
         if (comentario && comentario.length > 0) {
-            const response = await (await fetch("http://localhost:8080/comentario/", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    conteudo: comentario,
-                    usuarioId: usuario.id,
-                    testemunhoId: testemunhoId
-                })
-            })).json();
 
-            const responseComentario = await (await fetch(`http://localhost:8080/comentario/${response.id}`, {
-                method: "GET",
-                headers: { "Content-Type": "application/json" }
-            })).json();
+            let comentarioJson = {};
+            comentarioJson.conteudo = comentario;
+            comentarioJson.usuarioId = usuario.id;
+            comentarioJson.testemunhoId = testemunhoId;
 
 
-            console.log(auxComentario);
-            auxComentario.push(response);
-            setComentarios(auxComentario);
-            setComentario("");
+            const response = await axio.post("http://localhost:8080/comentario/", comentarioJson, {
+                headers: {
+                    Authorization: "Bearer " + token,
+                    "Content-Type": "application/json",
+                    Accept: "application/json"
+                }
+            });
+
+
+
+            if (response.status === 200) {
+
+                const comentarioResponse = await axio.get(`http://localhost:8080/comentario/${response.data.id}`, {
+                    headers: {
+                        Authorization: "Bearer " + token,
+                        "Content-Type": "application/json",
+                        Accept: "application/json"
+                    }
+                });
+
+                if (comentarioResponse.status === 200) {
+                    auxComentario.push(comentarioResponse.data);
+                    setComentarios(auxComentario);
+                    setComentario("");
+                }
+
+
+            }
+
+
         }
+    }
+
+    const deleteComentario = async (indice) => {
+        const auxComentario = comentarios.slice();
+        const id = auxComentario[indice].id;
+        const response = await axio.delete(`http://localhost:8080/comentario/${id}`, {
+            headers: {
+                Authorization: "Bearer " + token,
+                "Content-Type": "application/json",
+                Accept: "application/json"
+            }
+        })
+
+        if (response.status === 200) {
+            auxComentario.splice(indice, 1);
+            setComentarios(auxComentario);
+        }
+
     }
 
     return (
@@ -113,15 +147,11 @@ const ComentarioTestemunho = ({ usuario, testemunhoId, comentariosArray }) => {
             <div>
                 {
                     comentarios ? comentarios.map((v, i) => {
-                        return <Comentario key={i} comentario={v} />
+                        return <Comentario key={i}
+                            comentario={v}
+                            onClickDelete={() => deleteComentario(i)} />
                     }) : null
                 }
-                {/* <Comentario/>
-                <Comentario />
-                <Comentario />
-                <Comentario />
-                <Comentario />
-                <Comentario /> */}
             </div>
         </div>
     );
@@ -129,31 +159,32 @@ const ComentarioTestemunho = ({ usuario, testemunhoId, comentariosArray }) => {
 
 
 const Testemunho = () => {
-    const [testemunho, setTestemunho] = useState();
     const { state } = useLocation();
+    const [testemunho, setTestemunho] = useState(state);
+    const navigate = useNavigate();
+    const data = new Date(testemunho.dataCriacao);
+
+    const dia = data.getDate();
+    const mes = data.getMonth() + 1;
+    const ano = data.getFullYear();
+
+    const dataFormatada = `${dia < 10 ? '0' : ''}${dia}/${mes < 10 ? '0' : ''}${mes}/${ano}`;
 
 
-    const setLocalStorage = (chave, item) => {
-        localStorage.setItem(chave, item);
-    }
-
-    const getLocalStorage = (chave) => {
-        return localStorage.getItem(chave);
-    }
 
     useEffect(() => {
         if (state) {
             setTestemunho(state);
-            setLocalStorage("testemunho", JSON.stringify(state));
+            localStorage.setItem("testemuho", testemunho);
+        } else {
+            setTestemunho(localStorage.getItem("testemunho"));
         }
-    }, []);
 
-    useEffect(() => {
-        const testemunhoLocal = getLocalStorage("testemunho");
-        if (!testemunho && testemunhoLocal) {
-            setTestemunho(JSON.parse(testemunhoLocal));
-        }
-    }, [testemunho]);
+    }, [testemunho,state]);
+
+    const clickEdit = () => {
+        return navigate("/escrever-testemunho",{replace: true, state: testemunho});
+    }
 
     return (
         <div className="tetemunhos-container">
@@ -170,20 +201,20 @@ const Testemunho = () => {
                         <p>{testemunho ? testemunho.conteudo : null}</p>
 
                     </div>
-                    <p className="texto__edit">Última atualização: 26 - 12 -2022</p>
+                    <p className="texto__edit">Última atualização: {dataFormatada}</p>
                 </div>
 
                 <div className="tetemunhos-conteudo__acoes">
                     <IoArrowRedoOutline />
                     <AiOutlineDownload />
-                    <FiEdit />
+                    <FiEdit onClick={clickEdit}/>
                 </div>
                 <div className="tetemunhos-conteudo__comentario-container">
                     <p className="texto__titulo">Comentarios</p>
                     <div className="tetemunhos-conteudo__comentario">
                         <div>
                             {
-                                testemunho ? <ComentarioTestemunho usuario={testemunho ? testemunho.autor : null}
+                                testemunho ? <ComentarioTestemunho
                                     testemunhoId={testemunho ? testemunho.id : null}
                                     comentariosArray={testemunho ? testemunho.comentarios : null} /> : null
                             }
